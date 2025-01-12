@@ -27,34 +27,39 @@ def format_number(number):
 
 # Function to fetch video details and stream URLs using cookies
 def get_video_info(video_id):
+    # Optimized options for video
     ydl_opts_video = {
-        'format': 'best[height<=360]',  # 360p or lower for video
+        'format': 'best[height<=360]',  # Optimize for small video size
         'noplaylist': True,
         'cookiefile': COOKIES_FILE,  # Load cookies from file
+        'quiet': True,  # Suppress console output
+        'no_warnings': True,  # Suppress warnings
     }
 
+    # Optimized options for audio
     ydl_opts_audio = {
-        'format': 'bestaudio/best',  # Best audio available
+        'format': 'bestaudio/best',  # Fetch best audio format
         'noplaylist': True,
-        'cookiefile': COOKIES_FILE,
+        'cookiefile': COOKIES_FILE,  # Load cookies from file
+        'quiet': True,
+        'no_warnings': True,
     }
 
     try:
+        # Fetch video information
         with yt_dlp.YoutubeDL(ydl_opts_video) as ydl:
             info_video = ydl.extract_info(f'https://www.youtube.com/watch?v={video_id}', download=False)
 
+        # Fetch audio information
         with yt_dlp.YoutubeDL(ydl_opts_audio) as ydl:
             info_audio = ydl.extract_info(f'https://www.youtube.com/watch?v={video_id}', download=False)
 
+        # Extract required fields
         video_info = {
             'title': info_video.get('title'),
-            'channel': info_video.get('uploader'),
+            'channel_name': info_video.get('uploader'),
             'duration': format_duration(info_video.get('duration', 0)),
             'views': format_number(info_video.get('view_count', 0)),
-            'likes': format_number(info_video.get('like_count', 0)),
-            'comments': format_number(info_video.get('comment_count', 0)),
-            'id': video_id,
-            'link': f'https://youtu.be/{video_id}',
             'video_url': info_video.get('url'),
             'audio_url': info_audio.get('url'),
         }
