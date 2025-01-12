@@ -8,73 +8,44 @@ app = Flask(__name__)
 # Path to the YouTube cookies file
 COOKIES_FILE = 'cookies.txt'
 
-# Helper function to format duration in HH:MM:SS
-def format_duration(seconds):
-    hours = seconds // 3600
-    minutes = (seconds % 3600) // 60
-    seconds = seconds % 60
-    return f"{hours:02}:{minutes:02}:{seconds:02}"
-
-# Helper function to format large numbers into k, M, B
-def format_number(number):
-    if number >= 1_000_000_000:
-        return f"{number / 1_000_000_000:.1f}B"
-    elif number >= 1_000_000:
-        return f"{number / 1_000_000:.1f}M"
-    elif number >= 1_000:
-        return f"{number / 1_000:.1f}k"
-    return str(number)
-
-# Function to fetch video details and stream URLs using cookies
-def get_video_info(video_id):
-    # Optimized options for video
+# Function to fetch video and audio URLs using cookies
+def get_stream_urls(video_id):
     ydl_opts_video = {
-        'format': 'best[height<=360]',  # Optimize for small video size
+        'format': 'best[height<=360]',  # 360p or lower for video
         'noplaylist': True,
-        'cookiefile': COOKIES_FILE,  # Load cookies from file
-        'quiet': True,  # Suppress console output
-        'no_warnings': True,  # Suppress warnings
+        'cookiefile': COOKIES_FILE  # Load cookies from file
     }
 
-    # Optimized options for audio
     ydl_opts_audio = {
-        'format': 'bestaudio/best',  # Fetch best audio format
+        'format': 'bestaudio/best',  # Best audio available
         'noplaylist': True,
-        'cookiefile': COOKIES_FILE,  # Load cookies from file
-        'quiet': True,
-        'no_warnings': True,
+        'cookiefile': COOKIES_FILE  # Load cookies from file
     }
 
     try:
-        # Fetch video information
         with yt_dlp.YoutubeDL(ydl_opts_video) as ydl:
             info_video = ydl.extract_info(f'https://www.youtube.com/watch?v={video_id}', download=False)
-
-        # Fetch audio information
+        
         with yt_dlp.YoutubeDL(ydl_opts_audio) as ydl:
             info_audio = ydl.extract_info(f'https://www.youtube.com/watch?v={video_id}', download=False)
+        
+        video_url = info_video['url']
+        audio_url = info_audio['url']
 
-        # Extract required fields
-        video_info = {
-            'title': info_video.get('title'),
-            'channel_name': info_video.get('uploader'),
-            'duration': format_duration(info_video.get('duration', 0)),
-            'views': format_number(info_video.get('view_count', 0)),
-            'video_url': info_video.get('url'),
-            'audio_url': info_audio.get('url'),
+        return {
+            'video_url': video_url,
+            'audio_url': audio_url
         }
 
-        return video_info
-
     except Exception as e:
-        raise Exception(f"Error fetching video information: {str(e)}")
+        raise Exception(f"Error: {str(e)}")
 
-# Route for the video information and stream URLs
+# Route for the stream URLs
 @app.route('/id=<video_id>', methods=['GET'])
-def video_info(video_id):
+def stream_url(video_id):
     try:
-        info = get_video_info(video_id)
-        return jsonify(info)
+        urls = get_stream_urls(video_id)
+        return jsonify(urls)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
