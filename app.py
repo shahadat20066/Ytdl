@@ -5,6 +5,7 @@ import signal
 import platform
 import subprocess
 import stat
+import requests
 import zipfile
 import tarfile
 import threading
